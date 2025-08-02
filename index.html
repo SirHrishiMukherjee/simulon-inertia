@@ -1,0 +1,154 @@
+<!DOCTYPE html>
+<html lang="en">
+<head>
+  <meta charset="UTF-8">
+  <title>Simulonic Warp Node Engine</title>
+  <style>
+    body {
+      margin: 0;
+      background: black;
+      font-family: monospace;
+      color: #00ffee;
+      text-align: center;
+    }
+    canvas {
+      display: block;
+      margin: 10px auto;
+      background: black;
+    }
+    .controls {
+      margin-top: 10px;
+    }
+    .controls label {
+      margin: 0 10px;
+    }
+    .controls input {
+      vertical-align: middle;
+    }
+    button {
+      background: #00ffee;
+      color: black;
+      border: none;
+      padding: 6px 12px;
+      font-weight: bold;
+      margin-top: 10px;
+      cursor: pointer;
+    }
+  </style>
+</head>
+<body>
+
+<h2>Simulonic Inertial Null Core Simulation</h2>
+<canvas id="resonanceCanvas" width="600" height="600"></canvas>
+
+<div class="controls">
+  <label>Amplitude:
+    <input type="range" id="ampSlider" min="0" max="20" value="8" />
+  </label>
+  <label>Frequency:
+    <input type="range" id="freqSlider" min="1" max="10" value="3" />
+  </label>
+  <label>Rings:
+    <input type="range" id="ringSlider" min="3" max="20" value="12" />
+  </label>
+</div>
+
+<button id="modeToggle">Switch to Warping Mode 🌌</button>
+
+<script>
+  const canvas = document.getElementById('resonanceCanvas');
+  const ctx = canvas.getContext('2d');
+  const centerX = canvas.width / 2;
+  const centerY = canvas.height / 2;
+
+  const ampSlider = document.getElementById('ampSlider');
+  const freqSlider = document.getElementById('freqSlider');
+  const ringSlider = document.getElementById('ringSlider');
+  const toggleBtn = document.getElementById('modeToggle');
+
+  let warpMode = false;
+  let frame = 0;
+  let rings = [];
+
+  function generateRings(n) {
+    const maxRadius = 250;
+    return Array.from({ length: n }, (_, i) => ({
+      baseRadius: ((i + 1) / n) * maxRadius,
+      angle: 0,
+      speed: (i % 2 === 0 ? 1 : -1) * (0.01 + i * 0.002),
+      color: `hsl(${(i * 30) % 360}, 100%, 60%)`
+    }));
+  }
+
+  function drawCore() {
+    ctx.beginPath();
+    ctx.arc(centerX, centerY, 10, 0, Math.PI * 2);
+    ctx.fillStyle = 'white';
+    ctx.fill();
+  }
+
+  function drawRing(ring, frame, warpAmplitude, warpFrequency) {
+    ctx.save();
+    ctx.translate(centerX, centerY);
+    ctx.rotate(ring.angle);
+    ctx.strokeStyle = ring.color;
+    ctx.lineWidth = 2 + 1.5 * Math.sin(frame / 30 + ring.baseRadius / 50);
+    ctx.beginPath();
+
+    const segments = 200;
+    for (let i = 0; i <= segments; i++) {
+      const theta = (i / segments) * 2 * Math.PI;
+      let radius = ring.baseRadius;
+
+      if (warpMode) {
+        const warp = warpAmplitude * Math.sin(
+          frame / 20 + theta * warpFrequency + ring.baseRadius / 20
+        );
+        radius += warp;
+      }
+
+      const x = radius * Math.cos(theta);
+      const y = radius * Math.sin(theta);
+      if (i === 0) ctx.moveTo(x, y);
+      else ctx.lineTo(x, y);
+    }
+
+    ctx.closePath();
+    ctx.stroke();
+    ctx.restore();
+  }
+
+  function animate() {
+    ctx.clearRect(0, 0, canvas.width, canvas.height);
+    drawCore();
+
+    const amp = parseFloat(ampSlider.value);
+    const freq = parseFloat(freqSlider.value);
+    const count = parseInt(ringSlider.value);
+
+    if (rings.length !== count) {
+      rings = generateRings(count);
+    }
+
+    rings.forEach(ring => {
+      ring.angle += ring.speed;
+      drawRing(ring, frame, amp, freq);
+    });
+
+    frame++;
+    requestAnimationFrame(animate);
+  }
+
+  toggleBtn.addEventListener('click', () => {
+    warpMode = !warpMode;
+    toggleBtn.textContent = warpMode
+      ? 'Switch to Static Mode 🔁'
+      : 'Switch to Warping Mode 🌌';
+  });
+
+  rings = generateRings(parseInt(ringSlider.value));
+  animate();
+</script>
+
+</body>
+</html>
